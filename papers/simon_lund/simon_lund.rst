@@ -20,8 +20,8 @@ cphVB: A System for Automated Runtime Optimization and Parallelization of Vector
 
 .. class:: abstract
 
-    Modern processor architectures, in addition to having still more cores, also require still more consideration to memory-layout in order to run at full capacity.
-    The usefulness of most languages is deprecating as their abstractions, structures or objects are hard to map onto modern processor architectures efficiently.
+    Modern processor architectures, in addition to having an ever increasing number of cores, also require still more consideration to memory-layout in order to run at full capacity.
+    As a result, the usefulness of most languages is deprecating as their abstractions, structures or objects are hard to map onto modern processor architectures efficiently.
 
     The work in this paper introduces a new abstract machine framework, cphVB, that enables vector oriented high-level programming languages to map onto a broad range of architectures efficiently. The idea is to close the gap between high-level languages and hardware optimized low-level implementations. By translating high-level vector operations into an intermediate vector bytecode, cphVB enables specialized vector engines to efficiently execute the vector operations.
 
@@ -35,40 +35,39 @@ cphVB: A System for Automated Runtime Optimization and Parallelization of Vector
 Introduction
 ------------
 
-Obtaining high performance from today's computing environments requires both a deep and broad working knowledge on computer architecture, communication paradigms and programming interfaces. Today's computing environments are highly heterogeneous consisting of a mixture of CPUs, GPUs, FPGAs and DSPs orchestrated in a wealth of architectures and lastly connected in numerous ways.
+Obtaining high performance from today's computing environments requires both a deep and broad working knowledge of computer architecture, communication paradigms and programming interfaces. Today's computing environments are highly heterogeneous consisting of a mixture of CPUs, GPUs, FPGAs and DSPs orchestrated in a wealth of architectures and connected in numerous ways.
 
 Utilizing this broad range of architectures manually requires programming specialists and is a very time-consuming task – time and specialization a scientific researcher typically does not have. A high-productivity language that allows rapid prototyping and still enables efficient utilization of a broad range of architectures is clearly preferable. 
-There exist high-productivity language and libraries that automatically utilize parallel architectures [Kri10]_ [Dav04]_ [New11]_. They are however still few in numbers and have one problem in common. They are closely coupled to both the front-end, i.e. programming language and IDE, and the back-end, i.e. computing device, which makes them interesting only to the few using the exact combination of front and back-end.
+There exist high-productivity language and libraries that automatically utilize parallel architectures [Kri10]_ [Dav04]_ [New11]_. There exist few of these however and have one problem in common: they are closely coupled to both the front-end, i.e. programming language and IDE, and the back-end, i.e. computing device, which makes them interesting only to the few using the exact combination of front and back-end.
 
-A tight coupling between front-end technology and back-end presents another problem; the usefulness of the developed program expires as soon as the back-end does. With the rapid development of hardware architectures the time spend on implementing optimized programs for specific hardware, is lost as soon as the hardware product expires.
+A tight coupling between front-end technology and back-end presents another problem; the usefulness of the developed program expires as soon as the back-end does. With the rapid development of hardware architectures the time spent on implementing optimized programs for specific hardware, is lost as soon as the hardware product expires.
  
-In this paper, we present a novel approach to the problem of closing the gap between high-productivity languages and parallel architectures, which allows a high degree of modularity and reusability. The approach involves creating a framework, cphVB [*]_ (Copenhagen Vector Bytecode). cphVB defines a clear and easy to understand intermediate bytecode language and provides a runtime environment for executing the bytecode. cphVB also contains a protocol to govern the safe, and efficient exchange, creation, and destruction of model data.
+In this paper, we present a novel approach to the problem of closing the gap between high-productivity languages and parallel architectures, allowing for a high degree of modularity and reusability. The approach involves creating a framework, cphVB [*]_ (Copenhagen Vector Bytecode). cphVB defines a clear and easy to understand intermediate bytecode language and provides a runtime environment for executing the bytecode. cphVB also contains a protocol to govern the safe, and efficient exchange, creation, and destruction of model data.
 
 cphVB provides a retargetable framework in which the user can write programs utilizing whichever cphVB supported programming interface they prefer and run the program on their own workstation while doing prototyping, such as testing correctness and functionality of their programs. Users can then deploy exactly the same program in a more powerful execution environment without changing a single line of code and thus effectively solve greater problem sets.
 
-The rest of the paper is organized as follows. In Section `Programming Model`. we describe the programming model supported by cphVB. The section following gives a brief description of `Numerical Python`, which is the first programming interface that fully supports cphVB. Sections `Design` and `Implementation` cover the overall cphVB design and an implementation of it. In Section `Performance Study`, we conduct an evaluation of the implementation. Finally, in Section `Future Work` and `Conclusion` we discuss future work and conclude.
+The rest of the paper is organized as follows. In Section `Programming Model` we describe the programming model supported by cphVB. The section following gives a brief description of `Numerical Python`, which is the first programming interface that fully supports cphVB. Sections `Design` and `Implementation` cover the overall cphVB design and an implementation of it. In Section `Performance Study`, we conduct an evaluation of the implementation. Finally, in Section `Future Work` and `Conclusion` we discuss future work and conclude.
 
-.. [*] Open Source Project - Website: http://cphvb.bitbucket.org.
-
+.. [*] Open Source Project - Website: https://code.google.com/p/cphvb/.
 
 Related Work
 ~~~~~~~~~~~~
 
-The key motivation for cphVB is to provide a framework for the utilization of heterogeneous computing systems with the goal of obtaining high-performance, high-productivity and high-portability (:math:`HP^3`). Systems such as pyOpenCL/pyCUDA [Klo09]_ provides a direct mapping from front-end language to the optimization target. In this case, providing the user with direct access to the low-level systems OpenCL [Khr10]_ and CUDA [Nvi10]_ from the high-level language Python [Ros10]_.
-The work in [Klo09]_ enables the user to write a low-level implementation in a high-productivity language. The goal is similar to cphVB – the approach however is entirely different. cphVB provides a means to hide low-level target specific code behind a programming model and providing a framework and runtime environment to support it.
+The key motivation for cphVB is to provide a framework for the utilization of heterogeneous computing systems with the goal of obtaining high-performance, high-productivity and high-portability (:math:`HP^3`). Systems such as pyOpenCL/pyCUDA [Klo09]_ provide direct mappings from front-end language to the optimization target. In this case, providing the user with direct access to the low-level systems OpenCL [Khr10]_ and CUDA [Nvi10]_ from the high-level language Python [Ros10]_.
+The work in [Klo09]_ enables the user to write a low-level implementation in a high-productivity language. The goal is similar to cphVB – the approach however is entirely different. cphVB provides a means to hide low-level target specific code behind a programming model providing a framework and runtime environment to support it.
 
-Intel Math Kernel Library [Int08]_ is in this regard more comparable to cphVB. Intel MKL is a programming library providing utilization of multiple targets ranging from a single-core CPU to a multi-core shared memory CPU and even to a cluster of computers all through the same programming API. However, cphVB is not only a programming library it is a runtime system providing support for a vector oriented programming model. The programming model is well-known from high-productivity languages such as MATLAB [Mat10]_, [Rrr11]_, [Idl00]_, GNU Octave [Oct97]_ and Numerical Python (NumPy) [Oli07]_ to name a few.
+The Intel Math Kernel Library [Int08]_ is in this regard more comparable to cphVB. Intel MKL is a programming library providing utilization of multiple targets ranging from a single-core CPU to a multi-core shared memory CPU and even to a cluster of computers all through the same programming API. However, cphVB is not only a programming library it is a runtime system providing support for a vector oriented programming model. The programming model is well-known from high-productivity languages such as MATLAB [Mat10]_, [Rrr11]_, [Idl00]_, GNU Octave [Oct97]_ and Numerical Python (NumPy) [Oli07]_ to name a few.
 
 cphVB is more closely related to the work described in [Gar10]_, here a compilation framework is provided for execution in a hybrid environment consisting of both CPUs and GPUs. Their framework uses a Python/NumPy based front-end that uses Python decorators as hints to do selective optimizations. cphVB similarly provides a NumPy based front-end and equivalently does selective optimizations.
-However, cphVB uses a slightly less obtrusive approach; program selection hints are sent from the front-end via the NumPy-bridge. This approach provides the advantage that any existing NumPy program can run unaltered and take advantage of cphVB without changing a single line of code. Whereas unPython requires the user to manually modify the source code by applying hints in a manner similar to that of OpenMP [Pas05]_. This non-obtrusive design at the source level is to the author's knowledge novel.
+However, cphVB uses a slightly less intrusive approach; program selection hints are sent from the front-end via the NumPy-bridge. This approach provides the advantage that any existing NumPy program can run unaltered and take advantage of cphVB without changing a single line of code whereas unPython[Gar10]_ requires the user to manually modify the source code by applying hints in a manner similar to that of OpenMP [Pas05]_. This non-intrusive design at the source level is to the author's knowledge novel.
 
-Microsoft Accelerator [Dav04]_ introduces ParallelArray, which is similar to the utilization of the NumPy arrays in cphVB but there are strict limitations to the utilization of ParallelArrays. ParallelArrays does not allow the use of direct indexing, which means that the user must copy a ParallelArray into a conventional array before indexing. cphVB instead allows indexed operations and additionally supports **array-views**, which are array-aliases that provide multiple ways to access the same chunk of allocated memory. Thus, the data structure in cphVB is highly flexible and provides elegant programming solutions for a broad range of numerical algorithms. 
+Microsoft Accelerator [Dav04]_ introduces ParallelArray, which is similar to the utilization of the NumPy arrays in cphVB but there are strict limitations to the utilization of ParallelArrays. ParallelArrays do not allow the use of direct indexing, which means that the user must copy a ParallelArray into a conventional array before indexing. cphVB instead allows indexed operations and additionally supports **array-views**, which are array-aliases that provide multiple ways to access the same chunk of allocated memory. Thus, the data structure in cphVB is highly flexible and provides elegant programming solutions for a broad range of numerical algorithms. 
 Intel provides a similar approach called Intel Array Building Blocks (ArBB) [New11]_ that provides retargetability and dynamic compilation. It is thereby possible to utilize heterogeneous architectures from within standard C++.
-The retargetability aspect of Intel ArBB is represented in cphVB as a plain and simple configuration file that define the cphVB runtime environment. Intel ArBB provides a high performance library that utilizes a heterogeneous environment and hides the low-level details behind a vector oriented programming model similar to cphVB. However, ArBB only provides access to the programming model via C++ whereas cphVB is not biased towards any one specific front-end language.
+The retargetability aspect of Intel ArBB is represented in cphVB as a plain and simple configuration file that define the cphVB runtime environment. Intel ArBB provides a high performance library that utilizes a heterogeneous environment and hides the low-level details behind a vector oriented programming model similar to cphVB. However, ArBB only provides access to the programming model via C++ whereas cphVB is not biased towards any one specific front-end language as long as the front-end language is able to interface with C. 
 
 On multiple points cphVB is closely related in functionality and goals to the SEJITS [Cat09]_ project. SEJITS takes a different approach towards the front-end and programming model. SEJITS provides a rich set of computational kernels in a high-productivity language such as Python or Ruby. These kernels are then specialized towards an optimality criteria. This approach has shown to provide performance that at times out-performs even hand-written specialized code towards a given architecture. Being able to construct computational kernels is a core issue in data-parallel programming. 
 
-The programming model in cphVB does not provide this kernel methodology. cphVB has a strong NumPy heritage which also shows in the programming model. The advantage is easy adaptability of the cphVB programming model for users of NumPy, Matlab, Octave and R. The cphVB programming model is not a stranger to computational kernels – cphVB deduce computational kernels at runtime by inspecting the vector bytecode generated by the Bridge.
+The programming model in cphVB does not provide this kernel methodology. cphVB has a strong NumPy heritage which also shows in the programming model. The advantage is easy adaptability of the cphVB programming model for users of NumPy, Matlab, Octave and R. The cphVB programming model is not a stranger to computational kernels – cphVB deduces computational kernels at runtime by inspecting the vector bytecode generated by the language bridge.
 
 cphVB provides in this sense a virtual machine optimized for execution of vector operations, previous work [And08]_ was based on a complete virtual machine for generic execution whereas cphVB provides an optimized subset.
 
@@ -80,7 +79,7 @@ Before describing the design of cphVB, we will briefly go through Numerical Pyth
 
 NumPy is a library for numerical operations in Python, which is implemented in the C programming language. NumPy provides the programmer with a multidimensional array object and a whole range of supported array operations. By using the array operations, NumPy takes advantage of efficient C-implementations while retaining the high abstraction level of Python.
 
-NumPy uses an array syntax that is based on the Python list syntax. The arrays are indexed positionally, 0 through length – 1, where negative indexes is used for indexing in the reversed order. Like the list syntax in Python, it is possible to index multiple elements. All indexing that represents more than one element returns a view of the elements rather than a new copy of the elements. It is this view semantic that makes it possible to implement a stencil operation as illustrated in Figure :ref:`fig-stencil-expr` and demonstrated in the code example below. In order to force a real array copy rather than a new array reference NumPy provides the ''copy'' method.
+NumPy uses an array syntax that is based on the Python list syntax. The arrays are indexed positionally, 0 through length – 1, where negative indexes are used for indexing in the reversed order. Like the list syntax in Python, it is possible to index multiple elements. All indexing that represents more than one element returns a view of the elements rather than a new copy of the elements. It is this view semantic that makes it possible to implement a stencil operation as illustrated in Figure :ref:`fig-stencil-expr` and demonstrated in the code example below. In order to force a real array copy rather than a new array reference NumPy provides the ''copy'' method.
 
 In the rest of this paper, we define the **array-base** as the originally allocated array that lies contiguously in memory. In addition, we will define the **array-view** as a view of the elements in an **array-base**. An **array-view** is usually a subset of the elements in the **array-base** or a re-ordering such as the reverse order of the elements or a combination.
 
@@ -105,21 +104,24 @@ In the rest of this paper, we define the **array-base** as the originally alloca
 Target Programming Model
 ------------------------
 
-To hide the complexities of obtaining high-performance from a heterogeneous environment any given system must provide a meaningful high-level abstraction. This can be realized in the form of domain specific languages, embedded languages, language extensions, libraries, APIs etc. Such an abstraction serves two purposes: 1) It must provide meaning for the end-user such that the goal of high-productivity can be met with satisfaction. 2) It must provide an abstraction that consists of a sufficient amount of information for the system to optimize its utilization.
+To hide the complexities of obtaining high-performance from a heterogeneous environment any given system must provide a meaningful high-level abstraction. This can be realized in the form of domain specific languages, embedded languages, language extensions, libraries, APIs, etc. Such an abstraction serves two purposes:
 
-cphVB is not biased towards any specific choice of abstraction or front-end technology as long as it is compatible with a vector oriented programming model. This provides means to use cphVB in functional programming languages, provide a front-end with a strict mathematic notation such as APL [Apl00]_ or a more relaxed syntax such as MATLAB.
+1) It must provide meaning for the end-user such that the goal of high-productivity can be met with satisfaction.
+2) It must provide an abstraction that consists of a sufficient amount of information for the system to optimize its utilization.
 
-The vector oriented programming model encourages expressing programs in the form of high-level array operations, e.g. by expressing the addition of two arrays using one high-level function instead of computing each element individually. The NumPy application in the code example above figure :ref:`fig-stencil-expr` is a good example of using the vector oriented programming model.
+cphVB is not biased towards any specific choice of abstraction or front-end technology as long as it is compatible with a vector oriented programming model and is capable of interfacing with C. This provides the means to use cphVB in functional programming languages, provide a front-end with a strict mathematic notation such as APL [Apl00]_ or a more relaxed syntax such as MATLAB.
+
+The vector oriented programming model encourages expressing programs in the form of high-level array operations, e.g. by expressing the addition of two arrays using one high-level function instead of computing each element individually. The NumPy application in the code example above in figure :ref:`fig-stencil-expr` is a good example of using the vector oriented programming model.
 
 Design of cphVB
 ---------------
 
-The key contribution in this paper is a framework, cphVB, that support a vector oriented programming model. The idea of cphVB is to provide the mechanics to seamlessly couple a programming language or library with an architecture-specific implementation of vectorized operations.
+The key contribution in this paper is the framework, cphVB, that supports a vector oriented programming model. The idea of cphVB is to provide the mechanics to seamlessly couple a programming language or library with an architecture-specific implementation of vectorized operations.
 
 cphVB consists of a number of components that communicate using a simple protocol. Components are allowed to be architecture-specific but they are all interchangeable since all uses the same communication protocol. The idea is to make it possible to combine components in a setup that perfectly match a specific execution environment. cphVB consist of the following components:
 
 Programming Interface
-  The programming language or library exposed to the user. cphVB was initially meant as a computational back-end for the Python library NumPy, but we have generalized cphVB to potential support all kinds of languages and libraries. Still, cphVB has design decisions that are influenced by NumPy and its representation of vectors/matrices.
+  The programming language or library exposed to the user. cphVB was initially meant as a computational back-end for the Python library NumPy, but we have generalized cphVB to potentially support all kinds of languages and libraries. Still, cphVB has design decisions that are influenced by NumPy and its representation of vectors/matrices.
 
 Bridge
   The role of the Bridge is to integrate cphVB into existing languages and libraries. The Bridge generates the cphVB bytecode that corresponds to the user-code.
@@ -186,7 +188,7 @@ The requirement is straightforward: we need an opcode. The opcode will explicitl
 Interface
 ~~~~~~~~~
 
-The Vector Engine and the Vector Engine Manager exposes simple API that consists of the following functions: initialization, finalization, registration of a user-defined operation and execution of a list of bytecodes. Furthermore, the Vector Engine Manager exposes a function to define new arrays.
+The Vector Engine and the Vector Engine Manager exposes a simple API that consists of the following functions: initialization, finalization, registration of a user-defined operation and execution of a list of bytecodes. Furthermore, the Vector Engine Manager exposes a function to define new arrays.
 
 Bridge
 ~~~~~~
@@ -200,13 +202,13 @@ Instead of allowing the front-end to communicate directly with the Vector Engine
 
 To facilitate late allocation, and early release of resources, the VEM handles instantiation and destruction of arrays. At array creation only the meta data is actually created. Often arrays are created with structured data (e.g. random, constants), with no data at all (e.g. empty), or as a result of calculation. In any case it saves, potentially several, memory copies to delay the actual memory allocation. Typically, array data will exist on the computing device exclusively.
 
-In order to minimize data copying we introduce a data ownership scheme. It keeps track of which components in cphVB that needs to access a given array. The goal is to allow the system to have several copies of the same data while ensuring that they are in synchronization. We base the data ownership scheme on two instructions, **sync** and **discard**:
+In order to minimize data copying we introduce a data ownership scheme. It keeps track of which components in cphVB that need to access a given array. The goal is to allow the system to have several copies of the same data while ensuring that they are in synchronization. We base the data ownership scheme on two instructions, **sync** and **discard**:
 
 Sync 
-  is issued by the bridge to request read access to a data object. This means that when acknowledging a **sync** request, the copy existing in shared memory needs to be the most resent copy.
+  is issued by the bridge to request read access to a data object. This means that when acknowledging a **sync** request, the existing copy in shared memory needs to be the most recent copy.
 
 Discard
-  is used to signal that the copy in shared memory has been updated and all other copies are now invalid. Normally used by the bridge to upgrading a read access to a write access.
+  is used to signal that the copy in shared memory has been updated and all other copies are now invalid. Normally used by the bridge to upgrade a read access to a write access.
 
 The cphVB components follow the following four rules when implementing the data ownership scheme:
 
@@ -229,25 +231,26 @@ Though the Vector Engine is the most complex component of cphVB, it has a very s
 Implementation of cphVB
 -----------------------
 
-In order to demonstrate our cphVB design we have implemented a basic cphVB setup. This concretization of cphVB is by no means exhaustive. The setup is targeting the NumPy library executing on a single machine with multiple CPU-cores. In this section, we will describe the implementation of each component in the cphVB setup – the Bridge, the Vector Engine Manager, and the Vector Engine. The cphVB design rules (Sec. Design) govern the interplay between the components.
+In order to demonstrate the cphVB design we have implemented a basic cphVB setup. This specific implementation of cphVB is by no means exhaustive. The setup is targeting the NumPy library executing on a single machine with multiple CPU-cores. In this section, we will describe the implementation of each component in the cphVB setup – the Bridge, the Vector Engine Manager, and the Vector Engine. The cphVB design rules (Sec. Design) govern the interplay between the components.
 
 Bridge
 ~~~~~~
 
 The role of the Bridge is to introduce cphVB into an already existing project. In this specific case NumPy, but could just as well be ``R`` or any other language/tool that works primarily on vectorizable operations on large data objects. 
 
-It is the responsibility of the Bridge to generate cphVB instructions on basis of the Python program that is being run. The NumPy Bridge is an extension of NumPy version 1.6. It uses hooks to divert function call where the program access cphVB enabled NumPy arrays. The hooks will translate a given function into its corresponding cphVB bytecode when possible. When it is not possible, the hooks will feed the function call back into NumPy and thereby forcing NumPy to handle the function call itself.
+It is the responsibility of the Bridge to generate cphVB instructions on the basis of the Python program that is being run. The NumPy Bridge is an extension of NumPy version 1.6. It uses hooks to divert function calls where the program accesses cphVB enabled NumPy arrays. The hooks will translate a given function into its corresponding cphVB bytecode when possible. When it is not possible, the hooks will feed the function call back into NumPy thereby forcing NumPy to handle the function call itself.
 
-The Bridge operates with two address spaces for arrays: the cphVB space and the NumPy space. All arrays starts in the NumPy space as a default. The original NumPy implementation handles these arrays and all operations using them. It is possible to assign an array to the cphVB space explicitly by using an optional cphVB parameter in array creation functions such as ``empty`` and ``random``. The cphVB bridge implementation handles these arrays and all operations using them. 
+The Bridge operates with two address spaces for arrays: the cphVB space and the NumPy space. All arrays start in the NumPy space as a default. The original NumPy implementation handles these arrays and all operations using them. It is possible to assign an array to the cphVB space explicitly by using an optional cphVB parameter in array creation functions such as ``empty`` and ``random``. The cphVB bridge implementation handles these arrays and all operations using them. 
 
 In two circumstances, it is possible for an array to transfer from one address space to the other implicitly at runtime. 
 
- 1. When an operation accesses an array in the cphVB address space but it is not possible for the bridge to translate the operation into cphVB code. In this case, the bridge will synchronize and move the data to the NumPy address space. For efficiency no data is actually copied instead the bridge uses the ``mremap`` [*]_ function to re-map the relevant memory pages. 
- 2. When an operations access arrays in different address spaces the Bridge will transfer the arrays in the NumPy space to the cphVB space. Afterwards, the bridge will translate the operation into bytecode that cphVB can execute.
+1. When an operation accesses an array in the cphVB address space but it is not possible for the bridge to translate the operation into cphVB code. In this case, the bridge will synchronize and move the data to the NumPy address space. For efficiency no data is actually copied instead the bridge uses the ``mremap`` [*]_ function to re-map the relevant memory pages. 
 
-In order to detect direct access to arrays in the cphVB address space by the user, the original NumPy implementation, a Python library or any other external source, the bridge protects the memory of arrays that are in the cphVB address space using ``mprotect`` [*]_. Because of this memory protection, subsequently accesses to the memory will trigger a segmentation fault. The Bridge can then handle this kernel signal by transferring the array to the NumPy address space and cancel the segmentation fault. This technique makes it possible for the Bridge to support all valid Python/NumPy application since it can always fallback to the original NumPy implementation.
+2. When an operation accesses arrays in different address spaces the Bridge will transfer the arrays in the NumPy space to the cphVB space. Afterwards, the bridge will translate the operation into bytecode that cphVB can execute.
 
-In order to gather greatest possible information at runtime, the Bridge will collect a batch of instructions rather than executing one instruction at a time. The Bridge will keep recording instruction until either the application reaches the end of the program or untranslatable NumPy operations forces the Bridge to move an array to the NumPy address space. When this happens, the Bridge will call the Vector Engine Manager to execute all instructions recorded in the batch.
+In order to detect direct access to arrays in the cphVB address space by the user, the original NumPy implementation, a Python library or any other external source, the bridge protects the memory of arrays that are in the cphVB address space using ``mprotect`` [*]_. Because of this memory protection, subsequently accesses to the memory will trigger a segmentation fault. The Bridge can then handle this kernel signal by transferring the array to the NumPy address space and cancel the segmentation fault. This technique makes it possible for the Bridge to support all valid Python/NumPy applications since it can always fallback to the original NumPy implementation.
+
+In order to gather the greatest possible information at runtime, the Bridge will collect a batch of instructions rather than executing one instruction at a time. The Bridge will keep recording instructions until either the application reaches the end of the program or untranslatable NumPy operations force the Bridge to move an array to the NumPy address space. When this happens, the Bridge will call the Vector Engine Manager to execute all instructions recorded in the batch.
 
 Vector Engine Manager
 ~~~~~~~~~~~~~~~~~~~~~
@@ -257,14 +260,14 @@ The Vector Engine Manager (VEM) in our setup is very simple because it only has 
 Vector Engine
 ~~~~~~~~~~~~~
 
-In order to maximize the CPU cache utilization and enables parallel execution the first stage in the VE is to form a set of instructions that enables data blocking. That is, a set of instructions where all instructions can be applied on one data block completely at a time without violating data dependencies. This set of instructions will be referred to as a kernel.
+In order to maximize the CPU cache utilization and enables parallel execution in the first stage of the VE is to form a set of instructions that enables data blocking. That is, a set of instructions where all instructions can be applied on one data block completely at a time without violating data dependencies. This set of instructions will be referred to as a kernel.
 
-The VE will form the kernel based on the batch of instructions it receives from the VEM. The VE examines each instruction sequentially and keep adding instruction to the kernel until it reaches an instruction that is not **blockable** with the rest of the kernel. In order to be blockable with the rest of the kernel an instruction must satisfy the following two properties where :math:`A` is all instructions in the kernel and :math:`N` is the new instruction.
+The VE will form the kernel based on the batch of instructions it receives from the VEM. The VE examines each instruction sequentially and keeps adding instructions to the kernel until it reaches an instruction that is not **blockable** with the rest of the kernel. In order to be blockable with the rest of the kernel an instruction must satisfy the following two properties where :math:`A` is all instructions in the kernel and :math:`N` is the new instruction.
 
-1. The input arrays of :math:`N` and the output array of :math:`A` do not share any data or represents precisely the same data.
-2. The output array of :math:`N` and the input and output arrays of :math:`A` do not share any data or represents precisely the same data.
+1. The input arrays of :math:`N` and the output array of :math:`A` do not share any data or represent precisely the same data.
+2. The output array of :math:`N` and the input and output arrays of :math:`A` do not share any data or represent precisely the same data.
 
-When the VE has formed a kernel, it is ready for execution. Since all instruction in a kernel supports data blocking the VE can simply assign one block of data to each CPU-core in the system and thus utilizing multiple CPU-cores. In order to maximize the CPU cache utilization the VE may divide the instructions into even more data blocks. The idea is to access data in chunks that fits in the CPU cache. The user, through an environment variable, manually configures the number of data blocks the VE will use.
+When the VE has formed a kernel, it is ready for execution. Since all instructions in a kernel supports data blocking the VE can simply assign one block of data to each CPU-core in the system and thus utilizing multiple CPU-cores. In order to maximize the CPU cache utilization the VE may divide the instructions into even more data blocks. The idea is to access data in chunks that fits in the CPU cache. The user, through an environment variable, manually configures the number of data blocks the VE will use.
 
 .. [*] The function mremap() in GNU C library 2.4 and greater.
 .. [*] The function mprotect() in the POSIX.1-2001 standard.
@@ -293,20 +296,19 @@ Performance Study
    | Compiler                     | GCC 4.6.3            |
    +------------------------------+----------------------+
 
-In order to demonstrate the performance of our initial cphVB implementation and thereby the potential of the cphVB design, we will conduct some performance benchmarks using NumPy [*]_. We execute the benchmark applications on ASUS P31SD with an Intel Core i5-2410M processor (Table :ref:`tab:specs`). 
+In order to demonstrate the performance of our initial cphVB implementation and thereby the potential of the cphVB design, we will conduct some performance benchmarks using NumPy [*]_. We execute the benchmark applications on an ASUS P31SD with an Intel Core i5-2410M processor (Table :ref:`tab:specs`). 
 
-The experiments used the three vector engines: `simple`, `score` and `mcore` and for each execution we calculate the relative speedup of cphVB compared to NumPy. We perform strong scaling experiments, in which the problem size is constant though all the executions. For each experiment, we find the block size that results in best performance and we calculate the result of each experiment using the average of three executions.
+The experiments used the three vector engines named: `simple`, `score` and `mcore` calculating the relative speedup of cphVB compared to NumPy. We perform strong scaling experiments, in which the problem size is constant though all the executions. For each experiment, we find the block size that results in best performance and we calculate the result of each experiment using the average of three executions.
 
 The benchmark consists of the following Python/NumPy applications. All are pure Python applications that make use of NumPy and none uses any external libraries.
 
- - **Jacobi Solver** An implementation of an iterative jacobi solver with fixed iterations instead of numerical convergence. (Fig. :ref:`benchmark:jacobi`). 
+- **Jacobi Solver** An implementation of an iterative jacobi solver with fixed iterations instead of numerical convergence. (Fig. :ref:`benchmark:jacobi`). 
 
- - **kNN** A naive implementation of a k Nearest Neighbor search (Fig. :ref:`benchmark:knn`). 
+- **kNN** A naive implementation of a k Nearest Neighbor search (Fig. :ref:`benchmark:knn`). 
 
- - **Shallow Water** A simulation that simulates a system governed by the shallow water equations. It is a translation of a MATLAB application by Burkardt [Bur10]_ (Fig. :ref:`benchmark:swater`). 
+- **Shallow Water** A simulation that simulates a system governed by the shallow water equations. It is a translation of a MATLAB application by Burkardt [Bur10]_ (Fig. :ref:`benchmark:swater`). 
 
- - **Synthetic Stencil** A synthetic stencil simulation the code relies heavily on the slicing operations of NumPy. (Fig. :ref:`benchmark:stencil`).
-
+- **Synthetic Stencil** A synthetic stencil simulation that relies heavily on the slicing operations of NumPy. (Fig. :ref:`benchmark:stencil`).
 
 Discussion
 ~~~~~~~~~~
@@ -319,8 +321,8 @@ The Shallow Water simulation only has a time complexity of :math:`O(n)` thus it 
 
 Finally, the synthetic stencil has an almost identical performance pattern as the shallow water benchmark the `score` engine does however give slightly better results than the `simple` engine. Score achieves a speedup of 1.6x (:math:`6.60sec` to :math:`4.09sec`) and the `mcore` engine achieves a speedup of 3.04x (:math:`6.60sec` to :math:`2.17sec`).
 
-It is promising to observe that even most basic vector engine (`simple`) shows a speedup and in none of our benchmarks a slowdown. This leads to the promising conclusion that the memory optimizations implemented outweigh the cost of using cphVB. Adding the potential of speedup due to data-blocking motivates studying further optimizations in addition to thread-level-parallelization.
-The `mcore` engine does provide speedups, the speedup does however not scale with the number of cores. This result is however expected as the benchmarks are memory-intensive and the memory subsystem is therefore the bottleneck and not the number of computational cores available.
+It is promising to observe that even most basic vector engine (`simple`) shows a speedup and in none of our benchmarks a slowdown. This leads to the promising conclusion that the memory optimizations implemented outweigh the cost of using cphVB. Adding the potential speedup due to data-blocking motivates studying further optimizations in addition to thread-level-parallelization.
+The `mcore` engine does provide speedup, the speedup however does not scale with the number of cores. This result is expected as the benchmarks are memory-intensive and the memory subsystem is therefore the bottleneck and not the number of computational cores available.
 
 .. figure:: jacobi_fixed_speedup.pdf
 
@@ -343,11 +345,11 @@ The `mcore` engine does provide speedups, the speedup does however not scale wit
 Future Work
 -----------
 
-The future goals of cphVB involves improvement in two major areas; expanding support and improving performance. Work has started on a CIL-bridge which will leverage the use of cphVB to every CIL based programming language which among others include: C\#, F\#, Visual C++ and VB.NET. Another project in current progress within the area of support is a C++ bridge providing a library-like interface to cphVB using operator overloading and templates to provide a high-level interface in C++.
+The future goals of cphVB involves improvement in two major areas: expanding support and improving performance. Work has started on a CIL-bridge which will leverage the use of cphVB to every CIL based programming language which among others include: C\#, F\#, Visual C++ and VB.NET. Another project in current progress within the area of support is a C++ bridge providing a library-like interface to cphVB using operator overloading and templates to provide a high-level interface in C++.
 
-To improve both support and performance, work is in progress on a vector engine targeting OpenCL compatible hardware, mainly focusing on using GPU-resources to improve performance. Additionally the support for program execution using distributed memory is on progress. This functionality will be added to cphVB in the form a vector engine manager.
+To improve both support and performance, work is in progress on a vector engine targeting OpenCL compatible hardware, mainly focusing on using GPU-resources to improve performance. Additionally the support for program execution using distributed memory is in progress. This functionality will be added to cphVB in the form of a vector engine manager.
 
-In terms of pure performance enhancement, cphVB will introduce JIT compilation in order to improve memory intensive applications. The current vector engine for multi-cores CPUs uses data blocking to improve cache utilization but as our experiments show then the memory intensive applications still suffer from the von Neumann bottleneck [Bac78]_. By JIT compile the instruction kernels, it is possible to improve cache utilization drastically.
+In terms of pure performance enhancement, cphVB will introduce JIT compilation in order to improve memory intensive applications. The current vector engine for multi-cores CPUs uses data blocking to improve cache utilization but as our experiments show then the memory intensive applications still suffer from the von Neumann bottleneck [Bac78]_. By JIT compiling the instruction kernels, it is possible to improve cache utilization drastically.
 
 Conclusion
 ----------

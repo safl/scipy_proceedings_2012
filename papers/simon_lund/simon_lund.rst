@@ -298,7 +298,9 @@ Performance Study
 
 In order to demonstrate the performance of our initial cphVB implementation and thereby the potential of the cphVB design, we will conduct some performance benchmarks using NumPy [*]_. We execute the benchmark applications on an ASUS P31SD with an Intel Core i5-2410M processor (Table :ref:`tab:specs`). 
 
-The experiments used the three vector engines named: `simple`, `score` and `mcore` calculating the relative speedup of cphVB compared to NumPy. We perform strong scaling experiments, in which the problem size is constant though all the executions. For each experiment, we find the block size that results in best performance and we calculate the result of each experiment using the average of three executions.
+The experiments used the three vector engines named: `simple`, `score` and `mcore` calculating the relative speedup of cphVB compared to NumPy. The `simple` engine executes vector bytecode in an interpreted fashion, one bytecode at a time, utilizing a single CPU core. The `mcore` engine is an extension of the simple engine, attempting to utilize multiple CPU cores. The `score` engine implements a different approach to vector bytecode interpretation. It does runtime analysis to determine if multiple vector bytecodes can be executed in a tiled fashion in order to exploit locality.
+
+We perform strong scaling experiments, in which the problem size is constant though all the executions. For each experiment, we find the block size that results in best performance and we calculate the result of each experiment using the average of three executions.
 
 The benchmark consists of the following Python/NumPy applications. All are pure Python applications that make use of NumPy and none uses any external libraries.
 
